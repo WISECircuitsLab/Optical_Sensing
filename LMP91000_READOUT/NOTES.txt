@@ -1,0 +1,162 @@
+Settings that worked across the different LMPs -- testing with LED (gains will need to be higher for bio-experiments)
+
+measurements taken with external scope
+Key Takeaways from TIA Gain Sweep Tests
+
+TIA0 (External 100 MΩ + Internal 350 kΩ):
+Good behavior. Despite the huge external resistor, the internal 350 kΩ dominates, giving ~110 mVpp signal with 1.6 V DC offset.
+
+TIA1 (External 10 MΩ + Internal 350 kΩ):
+Unexpectedly non-functional under these conditions. Same effective resistance as TIA0 but no AC or DC output (0 mVpp, 0 V). Suggests a wiring issue or channel mismatch rather than gain selection.
+
+TIA2 (Internal R only):
+Works cleanly. Increasing internal gain levels produces reasonable Vpp growth:
+
+Level 4 → ~70 mVpp
+
+Level 5 → ~90 mVpp
+
+Level 6 → ~120 mVpp
+
+Level 7 → ~220 mVpp 
+
+TIA3 (External 100 kΩ + 350 kΩ internal):
+Very small effective gain (≈78 kΩ). Output is flat (0 mVpp) with only the 1.6 V offset visible.
+
+What this means for ADC bit depth
+
+Across all usable configurations, signals fall roughly in the 70–120 mVpp range on top of a 1.6 V baseline.
+
+To resolve ~10 mV features reliably:
+
+ADC bit-depth	LSB (at 3.3 V)	Suitable?
+10-bit	~3.2 mV	Barely OK, coarse resolution
+12-bit	~0.8 mV	Good match
+14-bit	~0.2 mV	Excellent for noise-limited sensing
+
+Recommendation:
+A 12-bit ADC is enough for normal operation. Move to 14-bit only if you need to quantify small current changes or want margin for filtering and oversampling.
+
+
+
+ * CSV OUTPUT FORMAT:
+ * ------------------
+ * Timestamp(ms),Command,TIA,Gain_Level,R_External(Ohm),R_Internal(Ohm),R_Total(Ohm),LED_State
+========================================
+        TIA0
+========================================
+========================================
+TIA: 0
+Gain Level: 7
+R_External: 100.00 MOhm
+R_Internal: Level 7 = 350.00 kOhm
+R_Total (Parallel): 348.7793 kOhm
+========================================
+
+180317,UP_GAIN,0,7,100000000.00,350000.00,348779.2812,OFF
+Voutpp = 110mV
+Voutdc = 1.6V (i.e. 1/2 Vdd)
+
+========================================
+        TIA1
+========================================
+========================================
+TIA1 Might not be function, given this set-up has the same equivalent resistance but no VoutPP seen, Voutpp= 0mVpp, Vdc=0 (i.e. no offset)
+========================================
+TIA: 1
+Gain Level: 7
+R_External: 10.00 MOhm
+R_Internal: Level 7 = 350.00 kOhm
+R_Total (Parallel): 338.1642 kOhm
+========================================
+
+542194,UP_GAIN,1,7,10000000.00,350000.00,338164.2500,OFF
+Already at maximum gain (7)
+
+Voutpp = 0mV
+Voutdc = 0V (i.e. no offset)
+
+========================================
+        TIA2
+========================================
+========================================
+TIA: 2
+Gain Level: 0
+R_External: Open Circuit
+R_Internal: Open Circuit (External Only Mode)
+R_Total (Parallel): Open Circuit
+========================================
+
+776374,DOWN_GAIN,2,0,OPEN,OPEN,OPEN,OFF
+Voutpp = 0mV
+Voutdc = 0V (i.e. no offset)
+========================================
+TIA: 2
+Gain Level: 1
+R_External: Open Circuit
+R_Internal: Level 1 = 2.75 kOhm
+R_Total (Parallel): 2.7500 kOhm
+========================================
+
+820374,UP_GAIN,2,1,OPEN,2750.00,2750.0000,OFF
+Voutpp = 0mV
+Voutdc = 1.6V
+========================================
+TIA: 2
+Gain Level: 4
+R_External: Open Circuit
+R_Internal: Level 4 = 14.00 kOhm
+R_Total (Parallel): 14.0000 kOhm
+========================================
+
+902511,UP_GAIN,2,4,OPEN,14000.00,14000.0000,OFF
+Voutpp = 70mV
+Voutdc = 1.6V
+========================================
+TIA: 2
+Gain Level: 5
+R_External: Open Circuit
+R_Internal: Level 5 = 35.00 kOhm
+R_Total (Parallel): 35.0000 kOhm
+========================================
+
+930918,UP_GAIN,2,5,OPEN,35000.00,35000.0000,OFF
+Voutpp = 90mV
+Voutdc = 1.6V
+========================================
+TIA: 2
+Gain Level: 6
+R_External: Open Circuit
+R_Internal: Level 6 = 120.00 kOhm
+R_Total (Parallel): 120.0000 kOhm
+========================================
+
+969604,UP_GAIN,2,6,OPEN,120000.00,120000.0000,OFF
+Voutpp = 120mV
+Voutdc = 1.6V
+========================================
+TIA: 2
+Gain Level: 7
+R_External: Open Circuit
+R_Internal: Level 7 = 350.00 kOhm
+R_Total (Parallel): 350.0000 kOhm
+========================================
+
+996595,UP_GAIN,2,7,OPEN,350000.00,350000.0000,OFF
+Voutpp = 220mV
+Voutdc = 1.6V
+
+========================================
+        TIA3
+========================================
+========================================
+TIA: 3
+Gain Level: 7
+R_External: 100.00 kOhm
+R_Internal: Level 7 = 350.00 kOhm
+R_Total (Parallel): 77.7778 kOhm
+========================================
+
+1083124,UP_GAIN,3,7,100000.00,350000.00,77777.7813,OFF
+Voutpp = 0mV
+Voutdc = 1.6V
