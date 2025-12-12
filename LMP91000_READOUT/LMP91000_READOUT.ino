@@ -12,6 +12,7 @@
  * 'o' - LED ON (turn LED on)
  * 'f' - LED OFF (turn LED off)
  * 'l,hertz,duration_ms' - Blink LED (e.g., "l,2.5,1000" = 2.5 Hz for 1000ms)
+ * 'C' - Toggle continuous A0 voltage stream mode (reads analog input from pin A0)
  * 
  * GAIN LOGIC:
  * -----------
@@ -49,11 +50,11 @@
 #include <Wire.h>
 
 // Configuration
-#define SDA_PIN 6
-#define SCL_PIN 7
-#define LED_PIN 9
-const int MENB_PINS[4] = {2, 3, 4, 5};  // TIA0, TIA1, TIA2, TIA3
-const float R_External[4] = {100000000.0, 10000000.0, -1.0, 100000.0}; // -1 indicates no external gain, open circuit
+#define SDA_PIN D4
+#define SCL_PIN D5
+#define LED_PIN D9
+const int MENB_PINS[4] = {D10, D1, D2, D3};  // TIA0, TIA1, TIA2, TIA3 (TIA0 not connected on either board, reset to D10, not used)
+const float R_External[4] = {-1.0, 10000000.0, -1.0, 100000.0}; // -1 indicates no external gain, open circuit
 
 #define DEBUG true
 #define MAX_GAIN 7
@@ -68,6 +69,12 @@ int currentTIA = 0;  // 0-3 (LMP1-LMP4)
 int currentGain = 4; // 0-7 (initial: 14 kOhm)
 bool ledState = false; // LED state
 unsigned long startTime = 0; // System start time for timestamps
+
+// Continuous stream mode variables
+bool continuousMode = false; // Continuous stream mode state
+float avgVoltage = 0.0; // Exponential weighted average voltage
+const float ALPHA = 0.1; // Exponential averaging factor (0.0 to 1.0, lower = more smoothing)
+const int A0_PIN = A0; // Analog input pin
 
 void configureLMP(LMP91000 &sensor, int menbPin, const char* name) {
   Serial.print("Configuring "); Serial.println(name);
@@ -273,6 +280,29 @@ void printStatus() {
   Serial.println("========================================\n");
 }
 
+// Read and print A0 voltage with exponential weighted average
+void readAndPrintA0() {
+  int analogValue = analogRead(A0_PIN);
+  // 12-bit adc, at vdd=3.3V
+  float voltage = (analogValue / 4095.0) * 3.3; // Assuming 3.3V reference, adjust if needed
+  
+  // Update exponential weighted average
+  if (avgVoltage == 0.0) {
+    // First reading, initialize average
+    avgVoltage = voltage;
+  } else {
+    // Exponential weighted average: avg = alpha * new + (1 - alpha) * old
+    avgVoltage = ALPHA * voltage + (1.0 - ALPHA) * avgVoltage;
+  }
+  
+  // Print current voltage and average voltage
+  Serial.print("A0 Voltage: ");
+  Serial.print(voltage, 4);
+  Serial.print(" V, Avg: ");
+  Serial.print(avgVoltage, 4);
+  Serial.println(" V");
+}
+
 // CSV Logging Function
 void printCSVLog(const char* command) {
   unsigned long timestamp = millis() - startTime;
@@ -344,6 +374,7 @@ void setup() {
   Serial.println("  'o' - LED ON");
   Serial.println("  'f' - LED OFF");
   Serial.println("  'l' - Blink LED (format: l,hertz,duration_ms)");
+  Serial.println("  'C' - Toggle continuous A0 voltage stream mode");
   
   // Print CSV header
   Serial.println("\nCSV Log:");
@@ -355,6 +386,12 @@ void setup() {
 }
 
 void loop() {
+  // Check if continuous stream mode is active
+  if (continuousMode) {
+    readAndPrintA0();
+    delay(100); // Small delay to prevent overwhelming serial output (adjust as needed)
+  }
+  
   if (Serial.available() > 0) {
     Serial.setTimeout(100);
     String input = Serial.readStringUntil('\n');
@@ -411,6 +448,20 @@ void loop() {
         } else {
           Serial.println("Invalid format. Use: l,hertz,duration_ms");
           printCSVLog("ERROR");
+        }
+        break;
+      }
+      case 'C': {
+        // Toggle continuous stream mode
+        continuousMode = !continuousMode;
+        if (continuousMode) {
+          // Starting new session, reset average
+          avgVoltage = 0.0;
+          Serial.println("Continuous A0 voltage stream mode ON");
+          printCSVLog("CONTINUOUS_ON");
+        } else {
+          Serial.println("Continuous A0 voltage stream mode OFF");
+          printCSVLog("CONTINUOUS_OFF");
         }
         break;
       }
