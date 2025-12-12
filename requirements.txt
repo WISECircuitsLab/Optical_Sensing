@@ -1,0 +1,16 @@
+# Python dependencies for Optical Sensing project
+# Install with: pip install -r requirements.txt
+
+# Serial communication
+pyserial>=3.5
+
+# Data processing and analysis
+pandas>=1.5.0
+numpy>=1.23.0
+
+# Scientific computing and interpolation
+scipy>=1.9.0
+
+# Plotting and visualization
+matplotlib>=3.6.0
+
